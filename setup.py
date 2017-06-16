@@ -27,7 +27,8 @@ setup(
     packages=['hhclient'],
     include_package_data=True,
     install_requires=[
-        'requests'
+        'requests',
+        'marshmallow-jsonapi'
     ],
     classifiers=[
     ],
