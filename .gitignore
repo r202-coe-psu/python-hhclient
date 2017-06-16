@@ -1,6 +1,10 @@
 *.pyc
 __pycache__
+jspm_packages
+hhservice/static/build.js
+hhservice/static/build.js.map
+hhservice/static/config.js
 *.egg*
 *.ini
 *.cfg
-
+.coverage
