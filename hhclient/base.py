@@ -4,20 +4,21 @@ Created on Feb 26, 2013
 @author: boatkrap
 '''
 
-import datetime
 import urllib
 
 from . import schemas
+
 
 class Error:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+
 class Resource:
     def __init__(self, **kwargs):
 
         self.errors = []
-        
+
         if 'error' in kwargs:
             kws = kwargs.pop('error')
             self.update_error(**kws)
@@ -26,16 +27,10 @@ class Resource:
             kws = kwargs.pop('errors')
             self.update_errors(kws)
 
+        self.data = {k.replace('_','-'): v for k, v in kwargs.items()}
 
-        self.data = kwargs
-        if not 'id' in self.data:
+        if 'id' not in self.data:
             self.data['id'] = None
-
-        
-        # self.manager = manager
-        # self._info = info
-        # self._loaded = loaded
-        # self._add_details(info)
 
     @property
     def is_error(self):
@@ -55,11 +50,15 @@ class Resource:
         if name in ['data', 'errors']:
             self.__dict__[name] = value
         else:
+            if '_' in name:
+                name = name.replace('_', '-')
             self.data[name] = value
 
     def __getattr__(self, name):
-        if name in self.data:
-            return self.data[name]
+        nname = name.replace('_', '-')
+
+        if nname in self.data:
+            return self.data[nname]
 
         if name in self.__dict__:
             return self.__dict__[name]
@@ -86,7 +85,6 @@ class Resource:
         self._loaded = val
 
 
-
 class Manager:
 
     __resource_class__ = None
@@ -111,15 +109,26 @@ class Manager:
 
         return [self.resource_class(self, res) for res in data]
 
-    def _get(self, url=None, params={}):
-        response = self.api.http_client.get(url)
-        return self.resource_class(self, response[response_key])
+    def _get(self, resource_id, url=None, params={}):
+        url = self.resource_url(url, resource_id=resource_id, params=params)
+        response, status_code = self.api.http_client.get(url)
+        
+        resource_dict = self.schema.load(response)
+    
+        errors = []
+
+        if 'errors' in response:
+            errors = response['errors']
+
+        return self.__resource_class__(errors=errors, **resource_dict.data)
+
+
 
     def _delete(self, url=None, params={}):
         response = self.api.http_client.delete(url)
 
     def _create(self, resource, url=None, params={}):
-        url = self.resource_url(url, params)
+        url = self.resource_url(url, params=params)
         data = self.schema.dump(resource).data
         response, status_code = self.api.http_client.post(url, data=data)
         resource_dict = self.schema.load(response)
@@ -136,11 +145,12 @@ class Manager:
         response = self.api.http_client.put(url, body=body)
         return self.resource_class()
 
-
-    def resource_url(self, url, params={}):
+    def resource_url(self, url, resource_id=None, params={}):
         url = url if url else self.__resource_url__
+        if resource_id:
+            url = url + '/' + str(resource_id)
         if len(params) > 0:
-            url = utl + '?' + urllib.urlencode(params)
+            url = url + '?' + urllib.urlencode(params)
 
         if url[-1] != '/':
             url = url + '/'

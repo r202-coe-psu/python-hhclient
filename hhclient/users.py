@@ -20,4 +20,4 @@ class UserManager(base.Manager):
         return self._create(user)
 
     def get(self, user_id):
-        return self.get('/users/%s' % str(user_id), 'user')
+        return self._get(user_id)
