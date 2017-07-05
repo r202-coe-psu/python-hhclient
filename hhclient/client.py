@@ -8,6 +8,8 @@ from . import base
 from . import http_client
 
 from . import users
+from . import buildings
+from . import applications
 
 
 class Client:
@@ -17,7 +19,7 @@ class Client:
                  host='127.0.0.1',
                  port=80,
                  secure_connection=False,
-                 token=None,
+                 access_token=None,
                  schemas=None):
 
         self.name = name
@@ -25,21 +27,30 @@ class Client:
         self.host = host
         self.port = port
         self.secure_connection = secure_connection
+        self.access_token = access_token
 
         self.http_client = http_client.HTTPClient(name,
                                                   password,
                                                   host,
                                                   port,
                                                   secure_connection,
-                                                  token
+                                                  access_token
                                                   )
 
         self.schemas = schemas
         if not self.schemas:
             self.schemas = self.get_schemas()
 
+        
+        retrieve_schema = lambda m:\
+            self.schemas.get(m.__resource_class__.__resource_name__,
+                             None)
         self.users = users.UserManager(self,
-                schema=self.schemas.get(users.UserManager.__resource_class__.__resource_name__, None))
+                schema=retrieve_schema(users.UserManager))
+        self.buildings = buildings.BuildingManager(self,
+                schema=retrieve_schema(buildings.BuildingManager))
+        self.applications = applications.ApplicationManager(self,
+                schema=retrieve_schema(applications.ApplicationManager))
    
     def authenticate(self, name=None, password=None):
         if name:
@@ -63,9 +74,25 @@ class Client:
             )
         )
 
-        response, errors= self.http_client.post('/auth', data=data)
+        response, errors = self.http_client.post('/auth', data=data)
 
         resource = base.Resource(**response)
+        if not resource.is_error:
+            self.access_token = resource.access_token
+            self.http_client.access_token = self.access_token
+
+        return resource
+
+    def refresh_token(self):
+        data = {}
+        response, errors = self.http_client.post('/auth/refresh_token',
+                                                 data=data)
+
+        resource = base.Resource(**response)
+        if not resource.is_error:
+            self.access_token = resource.access_token
+            self.http_client.access_token = self.access_token
+
         return resource
 
     def get_schemas(self):

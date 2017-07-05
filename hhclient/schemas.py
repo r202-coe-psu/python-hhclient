@@ -14,12 +14,12 @@ field_map = {
         'email': fields.Email,
         'function': fields.Function,
         'array': fields.List,
+        'object': fields.Relationship,
         }
 
 
 class ResourceSchemaFactory:
     def create_schema(resource_name, schemas):
-
 
         class ResourceSchema(Schema):
             id = fields.String()
@@ -30,9 +30,15 @@ class ResourceSchemaFactory:
         for name, des in schemas['properties'].items():
             field_type = des['type']
             field_obj = None
-            if field_type == 'array':
-                field_obj = field_map[field_type](
-                        field_map[des['items']['type']]
+            # print('n,d:', name, des)
+            if field_type == 'array' or 'array' in field_type:
+                sub_type = des['items']['type']
+                # print('sb', sub_type)
+                if sub_type == 'object':
+                    field_obj = fields.Relationship()
+                else:
+                    field_obj = field_map['array'](
+                       field_map[sub_type]
                         )
             else:
                 field_obj = field_map[field_type]()

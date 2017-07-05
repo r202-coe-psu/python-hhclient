@@ -19,7 +19,7 @@ class HTTPClient:
         self.host = host
         self.port = port
         self.secure_connection = secure_connection
-        self.auth_token = token
+        self.access_token = token
         self.user_id = None
 
         self.scheme = 'http'
@@ -41,7 +41,6 @@ class HTTPClient:
                                     url,
                                     **kwargs)
 
-
         logger.debug('response => code: {} data: {}'\
                 .format(response.status_code, response.json()))
 
@@ -49,10 +48,9 @@ class HTTPClient:
 
 
     def _cs_request(self, url, method, **kwargs):
-        # if self.auth_token is None:
-        #     self.authenticate()
-
-        kwargs.setdefault('headers', {})['X-Auth-Token'] = self.auth_token
+        kwargs.setdefault('headers', {})
+        if self.access_token:
+            kwargs['headers']['Authorization'] = 'Bearer {}'.format(self.access_token)
 
         return self.request(self.api_url + url, 
                             method,

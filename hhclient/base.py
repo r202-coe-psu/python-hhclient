@@ -16,8 +16,8 @@ class Error:
 
 class Resource:
     def __init__(self, **kwargs):
-
         self.errors = []
+        self.response = kwargs.pop('response', {})
 
         if 'error' in kwargs:
             kws = kwargs.pop('error')
@@ -47,7 +47,7 @@ class Resource:
             self.update_error(**kwe)
 
     def __setattr__(self, name, value):
-        if name in ['data', 'errors']:
+        if name in ['data', 'errors', 'response']:
             self.__dict__[name] = value
         else:
             if '_' in name:
@@ -85,7 +85,7 @@ class Resource:
         self._loaded = val
 
 
-class Manager:
+class BaseManager:
 
     __resource_class__ = None
     __resource_url__ = None
@@ -104,23 +104,37 @@ class Manager:
         return resource
 
     def _list(self, url=None, params={}):
-        response = self.api.http_client.get(url)
-        data = response[response_key]
-
-        return [self.resource_class(self, res) for res in data]
-
-    def _get(self, resource_id, url=None, params={}):
-        url = self.resource_url(url, resource_id=resource_id, params=params)
+        url = self.resource_url(url, params=params)
         response, status_code = self.api.http_client.get(url)
-        
-        resource_dict = self.schema.load(response)
+        resource_dict = self.schema.load(response, many=True)
     
         errors = []
 
         if 'errors' in response:
             errors = response['errors']
 
-        return self.__resource_class__(errors=errors, **resource_dict.data)
+        # print('rd', resource_dict)
+
+        response_list = [self.__resource_class__(errors=errors,
+                                                 response=data,
+                                                 **data)\
+                            for data in resource_dict.data]
+        return response_list
+
+    def _get(self, resource_id, url=None, params={}):
+        url = self.resource_url(url, resource_id=resource_id, params=params)
+        response, status_code = self.api.http_client.get(url)
+        # print('response', response)
+        resource_dict = self.schema.load(response)
+    
+        errors = []
+
+        if 'errors' in response:
+            errors = response['errors']
+        # print('rd:', resource_dict)
+        return self.__resource_class__(errors=errors,
+                                       response=response,
+                                       **resource_dict.data)
 
 
 
@@ -152,7 +166,26 @@ class Manager:
         if len(params) > 0:
             url = url + '?' + urllib.urlencode(params)
 
-        if url[-1] != '/':
-            url = url + '/'
+        # if url[-1] != '/':
+        #     url = url + '/'
 
         return url
+
+
+class Manager(BaseManager):
+    
+    def list(self):
+        return self._list()
+
+    def create(self, **kwargs):
+        resource = self.__resource_class__(**kwargs)
+        return super()._create(resource)
+
+    def get(self, resource_id):
+        return super()._get(resource_id)
+
+    def update(self, resource):
+        return super()._update(resource)
+
+    def delete(self, resource):
+        return super()._delete(resource)
