@@ -3,7 +3,7 @@ from marshmallow_jsonapi import Schema, fields
 field_map = {
         'string': fields.String,
         'integer': fields.Integer,
-        'datetime': fields.DateTime,
+        'date-time': fields.DateTime,
         'boolean': fields.Boolean,
         'time': fields.Time,
         'formatted_string': fields.FormattedString,
@@ -40,12 +40,14 @@ class ResourceSchemaFactory:
                        field_map[sub_type]
                         )
                 # print(field_obj)
+            elif 'format' in des and des['format'] == 'date-time':
+                field_obj = field_map['date-time']()
             else:
                 field_obj = field_map[field_type]()
 
             if name in schemas['required']:
                 field_obj.required = True
-            
+
             resource_schema.fields[name] = field_obj
             resource_schema.declared_fields[name] = field_obj
 
