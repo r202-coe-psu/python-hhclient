@@ -33,13 +33,13 @@ class ResourceSchemaFactory:
             # print('n,d:', name, des)
             if field_type == 'array' or 'array' in field_type:
                 sub_type = des['items']['type']
-                # print('sb', sub_type)
                 if sub_type == 'object':
-                    field_obj = fields.Relationship()
+                    field_obj = fields.Relationship(type_=name)
                 else:
                     field_obj = field_map['array'](
                        field_map[sub_type]
                         )
+                # print(field_obj)
             else:
                 field_obj = field_map[field_type]()
 

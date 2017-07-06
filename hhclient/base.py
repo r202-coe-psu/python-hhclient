@@ -155,9 +155,17 @@ class BaseManager:
         return self.__resource_class__(errors=errors, **resource_dict.data)
 
     def _update(self, resource, url=None, params={}):
-        # print("update:", url, response_key, body)
-        response = self.api.http_client.put(url, body=body)
-        return self.resource_class()
+        url = self.resource_url(url, params=params)
+        data = self.schema.dump(resource).data
+        response, status_code = self.api.http_client.put(url, data=data)
+        resource_dict = self.schema.load(response)
+    
+        errors = []
+
+        if 'errors' in response:
+            errors = response['errors']
+
+        return self.__resource_class__(errors=errors, **resource_dict.data)
 
     def resource_url(self, url, resource_id=None, params={}):
         url = url if url else self.__resource_url__
