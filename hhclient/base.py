@@ -138,7 +138,10 @@ class BaseManager:
 
 
 
-    def _delete(self, url=None, params={}):
+    def _delete(self, resource_id, url=None, params={}):
+        url = self.resource_url(url,
+                                resource_id=resource_id,
+                                params=params)
         response = self.api.http_client.delete(url)
 
     def _create(self, resource, url=None, params={}):
@@ -155,7 +158,7 @@ class BaseManager:
         return self.__resource_class__(errors=errors, **resource_dict.data)
 
     def _update(self, resource, url=None, params={}):
-        url = self.resource_url(url, params=params)
+        url = self.resource_url(url, resource_id=resource.id, params=params)
         data = self.schema.dump(resource).data
         response, status_code = self.api.http_client.put(url, data=data)
         resource_dict = self.schema.load(response)
