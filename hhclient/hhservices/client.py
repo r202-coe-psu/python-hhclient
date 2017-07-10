@@ -2,14 +2,14 @@ import requests
 import json
 import logging
 
-logger = logging.getLogger(__name__)
-
-from . import base
-from . import http_client
+from ..common import base
+from ..common import http_client
 
 from . import users
 from . import buildings
 from . import applications
+
+logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -29,13 +29,14 @@ class Client:
         self.secure_connection = secure_connection
         self.access_token = access_token
 
-        self.http_client = http_client.HTTPClient(name,
-                                                  password,
-                                                  host,
-                                                  port,
-                                                  secure_connection,
-                                                  access_token
-                                                  )
+        self.http_client = http_client.HHServiceHTTPClient(
+                name,
+                password,
+                host,
+                port,
+                secure_connection,
+                access_token
+                )
 
         self.schemas = schemas
         if not self.schemas:

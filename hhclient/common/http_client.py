@@ -7,28 +7,13 @@ logger = logging.getLogger(__name__)
 
 class HTTPClient:
     def __init__(self,
-                 name=None,
-                 password=None,
-                 host='127.0.0.1',
-                 port=8080,
-                 secure_connection=False,
-                 token=None):
+                 api_url,
+                 access_token=None):
 
-        self.name = name
-        self.password = password
-        self.host = host
-        self.port = port
-        self.secure_connection = secure_connection
-        self.access_token = token
-        self.user_id = None
-
-        self.scheme = 'http'
-        if self.secure_connection:
-            self.scheme = 'https'
-
+        self.api_url = api_url
+        self.access_token = access_token
         self.session = requests.session()
 
-        self.api_url = '%s://%s:%d' % (self.scheme, self.host, self.port)
 
     def request(self, url, method, **kwargs):
         kwargs['headers']['Content-Type'] = 'application/vnd.api+json'
@@ -67,3 +52,29 @@ class HTTPClient:
 
     def delete(self, url, **kwargs):
         return self._cs_request(url, 'DELETE', **kwargs)
+
+
+class HHServiceHTTPClient(HTTPClient):
+    def __init__(self,
+                 name=None,
+                 password=None,
+                 host='127.0.0.1',
+                 port=8080,
+                 secure_connection=False,
+                 access_token=None):
+
+        self.name = name
+        self.password = password
+        self.host = host
+        self.port = port
+        self.secure_connection = secure_connection
+        self.access_token = access_token
+        self.user_id = None
+
+        self.scheme = 'http'
+        if self.secure_connection:
+            self.scheme = 'https'
+
+        self.api_url = '%s://%s:%d' % (self.scheme, self.host, self.port)
+
+        super().__init__(self.api_url, access_token)

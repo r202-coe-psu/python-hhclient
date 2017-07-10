@@ -1,4 +1,4 @@
-from . import base
+from ..common import base
 
 
 class Building(base.Resource):
