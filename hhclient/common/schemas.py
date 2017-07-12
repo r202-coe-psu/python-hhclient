@@ -23,6 +23,7 @@ class ResourceSchemaFactory:
 
         class ResourceSchema(Schema):
             id = fields.String()
+
             class Meta:
                 type_ = resource_name
 
@@ -40,6 +41,20 @@ class ResourceSchemaFactory:
                        field_map[sub_type]
                         )
                 # print(field_obj)
+            elif field_type == 'object':
+                if 'properties' in des:
+                    rname = name
+                    if 'meta' in des and\
+                            'jsonapitype' in des['meta']:
+                        rname = des['meta']['jsonapitype']
+
+                    sub_schema = ResourceSchemaFactory.create_schema(
+                            rname,
+                            des)
+                    field_obj = fields.Relationship(type_=rname,
+                                                    schema=sub_schema)
+                else:
+                    field_obj = fields.Relationship(type_=name)
             elif 'format' in des and des['format'] == 'date-time':
                 field_obj = field_map['date-time']()
             else:
@@ -52,4 +67,3 @@ class ResourceSchemaFactory:
             resource_schema.declared_fields[name] = field_obj
 
         return resource_schema
-

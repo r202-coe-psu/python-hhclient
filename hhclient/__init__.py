@@ -8,8 +8,8 @@ def get_client(client_name):
         from .hhservices.client import Client
         return Client
     elif client_name == 'inventory':
-        from .applications.inventories.client import Clinet
+        from .applications.inventory.client import Client
         return Client
     elif client_name == 'nutrition':
-        from .applications.nutrition.client import Clinet
+        from .applications.nutrition.client import Client
         return Client

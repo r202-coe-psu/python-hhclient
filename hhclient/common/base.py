@@ -1,12 +1,8 @@
-'''
-Created on Feb 26, 2013
-
-@author: boatkrap
-'''
 
 import urllib
 
 from . import schemas
+import marshmallow_jsonapi as mja
 
 
 class Error:
@@ -27,7 +23,7 @@ class Resource:
             kws = kwargs.pop('errors')
             self.update_errors(kws)
 
-        self.data = {k.replace('_','-'): v for k, v in kwargs.items()}
+        self.data = {k.replace('_', '-'): v for k, v in kwargs.items()}
 
         if 'id' not in self.data:
             self.data['id'] = None
@@ -107,7 +103,7 @@ class BaseManager:
         url = self.resource_url(url, params=params)
         response, status_code = self.api.http_client.get(url)
         resource_dict = self.schema.load(response, many=True)
-    
+
         errors = []
 
         if 'errors' in response:
@@ -117,8 +113,8 @@ class BaseManager:
 
         response_list = [self.__resource_class__(errors=errors,
                                                  response=data,
-                                                 **data)\
-                            for data in resource_dict.data]
+                                                 **data)
+                         for data in resource_dict.data]
         return response_list
 
     def _get(self, resource_id, url=None, params={}):
@@ -126,7 +122,7 @@ class BaseManager:
         response, status_code = self.api.http_client.get(url)
         # print('response', response)
         resource_dict = self.schema.load(response)
-    
+
         errors = []
 
         if 'errors' in response:
@@ -136,20 +132,35 @@ class BaseManager:
                                        response=response,
                                        **resource_dict.data)
 
-
-
     def _delete(self, resource_id, url=None, params={}):
         url = self.resource_url(url,
                                 resource_id=resource_id,
                                 params=params)
         response = self.api.http_client.delete(url)
+        return response
 
     def _create(self, resource, url=None, params={}):
         url = self.resource_url(url, params=params)
+        # print('reso', resource.data)
+        # print('===>',
+        #        self.schema.fields['building']._Relationship__schema.__dict__)
         data = self.schema.dump(resource).data
+
+        for name, field in self.schema.fields.items():
+            if isinstance(field, mja.fields.Relationship):
+                if name not in data:
+                    # print('xxx>', resource.data)
+                    if name in resource.data:
+                        if 'relationships' not in data['data']:
+                            data['data']['relationships'] = {}
+                        data['data']['relationships'][name] = \
+                            field._Relationship__schema.dump(
+                                resource.data[name]).data
+
+        print('data', data)
         response, status_code = self.api.http_client.post(url, data=data)
         resource_dict = self.schema.load(response)
-    
+
         errors = []
 
         if 'errors' in response:
@@ -162,7 +173,7 @@ class BaseManager:
         data = self.schema.dump(resource).data
         response, status_code = self.api.http_client.put(url, data=data)
         resource_dict = self.schema.load(response)
-    
+
         errors = []
 
         if 'errors' in response:
@@ -184,7 +195,7 @@ class BaseManager:
 
 
 class Manager(BaseManager):
-    
+
     def list(self):
         return self._list()
 
