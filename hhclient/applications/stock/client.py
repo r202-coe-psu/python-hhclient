@@ -1,6 +1,6 @@
 from hhclient.common import client
 
-from . import inventories
+from . import stocks
 
 import logging
 
@@ -15,7 +15,7 @@ class Client(client.BaseClient):
 
         super().__init__(api_url, access_token, schemas)
 
-        self.inventories = inventories.InventoryManager(
+        self.stocks = stocks.StockManager(
                 self,
                 schema=self.retrieve_schema(
-                    inventories.InventoryManager))
+                    stocks.StockManager))
