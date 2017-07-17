@@ -1,6 +1,7 @@
 from hhclient.common import client
 
 from . import stocks
+from . import items
 
 import logging
 
@@ -19,3 +20,7 @@ class Client(client.BaseClient):
                 self,
                 schema=self.retrieve_schema(
                     stocks.StockManager))
+        self.items = items.ItemManager(
+                self,
+                schema=self.retrieve_schema(
+                    items.ItemManager))
