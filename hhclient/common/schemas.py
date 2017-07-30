@@ -3,6 +3,7 @@ from marshmallow_jsonapi import Schema, fields
 field_map = {
         'string': fields.String,
         'integer': fields.Integer,
+        'number': fields.Integer,
         'date-time': fields.DateTime,
         'boolean': fields.Boolean,
         'time': fields.Time,
