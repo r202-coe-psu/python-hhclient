@@ -19,3 +19,18 @@ class InventoryManager(base.Manager):
         url = self.__resource_url__.format(stock_id=stock.id)
 
         return self._list(url=url)
+
+    def list_items(self, stock):
+        url = '{}/list-items'.format(
+                self.__resource_url__.format(
+                    stock_id=stock.id))
+
+        return self.api.items._list(url=url)
+
+    def consume(self, stock, item, consuming_size, consume_unit=None):
+        url = '{}/consume'.format(
+                self.__resource_url__.format(
+                    stock_id=stock.id))
+
+        return self.api.items._list(url=url)
+
