@@ -24,10 +24,17 @@ class BaseClient:
         if not self.schemas:
             self.schemas = self.get_schemas()
 
-    def retrieve_schema(self, manager):
-        return self.schemas.get(
-                manager.__resource_class__.__resource_name__,
-                None)
+    def retrieve_schema(self, manager=None, resource_type=None):
+        schema = None
+        if manager:
+            schema = self.schemas.get(
+                    manager.__resource_class__.__resource_name__,
+                    None)
+        if resource_type:
+            schema = self.schemas.get(
+                    resource_type,
+                    None)
+        return schema
 
     def get_schemas(self):
         response, status_code = self.http_client.get('/schemas')

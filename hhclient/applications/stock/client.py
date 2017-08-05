@@ -29,4 +29,3 @@ class Client(client.BaseClient):
                 self,
                 schema=self.retrieve_schema(
                     inventories.InventoryManager))
-

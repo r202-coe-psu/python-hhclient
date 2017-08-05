@@ -1,6 +1,4 @@
 
-import urllib
-
 from . import schemas
 import marshmallow_jsonapi as mja
 
@@ -93,54 +91,79 @@ class BaseManager:
                 self.__resource_class__.__resource_name__,
                 schema)
 
+        self.call_method = dict(
+                GET=self.api.http_client.get,
+                POST=self.api.http_client.post,
+                DELETE=self.api.http_client.delete,
+                PUT=self.api.http_client.put,
+                )
+
     def get_resource_class(self):
         return self.__resource_class__
 
     def get_data(self, resource):
         return resource
 
-    def _list(self, url=None, params={}):
-        url = self.resource_url(url, params=params)
-        response, status_code = self.api.http_client.get(url)
-        resource_dict = self.schema.load(response, many=True)
+    def call(self, url, http_method='GET', data=None, schema=None,
+             schema_many=False, params=None):
+        method = self.call_method.get(http_method, None)
+        if method is None:
+            return
+
+        response, status_code = method(url, data=data, params=params)
+        # print('response', response)
+        resource_data = None
+
+        dump_schema = self.schema.load
+        if schema:
+            dump_schema = self.schema.load
+
+        if schema_many:
+            resource_data = dump_schema(response, many=True).data
+        else:
+            resource_data = dump_schema(response).data
 
         errors = []
 
         if 'errors' in response:
             errors = response['errors']
 
-        # print('rd', resource_dict)
+        return resource_data, errors, response
 
+    def _list(self, url=None, params={}):
+        url = self.resource_url(url)
+        resource_data, errors, response = self.call(url,
+                                                    http_method='GET',
+                                                    schema_many=True,
+                                                    params=params)
+        # print('===>',resource_data)
         response_list = [self.__resource_class__(errors=errors,
                                                  response=data,
                                                  **data)
-                         for data in resource_dict.data]
+                         for data in resource_data]
         return response_list
 
     def _get(self, resource_id, url=None, params={}):
-        url = self.resource_url(url, resource_id=resource_id, params=params)
-        response, status_code = self.api.http_client.get(url)
-        # print('response', response)
-        resource_dict = self.schema.load(response)
-
-        errors = []
-
-        if 'errors' in response:
-            errors = response['errors']
-        # print('rd:', resource_dict)
+        url = self.resource_url(url, resource_id=resource_id)
+        resource_data, errors, response = self.call(url,
+                                                    http_method='GET',
+                                                    params=params)
         return self.__resource_class__(errors=errors,
                                        response=response,
-                                       **resource_dict.data)
+                                       **resource_data)
 
     def _delete(self, resource_id, url=None, params={}):
         url = self.resource_url(url,
-                                resource_id=resource_id,
-                                params=params)
-        response = self.api.http_client.delete(url)
+                                resource_id=resource_id)
+        # print('response', response)
+        resource_data, errors, response = self.call(url,
+                                                    http_method='DELETE',
+                                                    params=params)
+
         return response
 
     def _create(self, resource, url=None, params={}):
-        url = self.resource_url(url, params=params)
+        url = self.resource_url(url)
         # print('reso', resource.data)
         # print('===>',
         #        self.schema.fields['building']._Relationship__schema.__dict__)
@@ -157,37 +180,36 @@ class BaseManager:
                             field._Relationship__schema.dump(
                                 resource.data[name]).data
 
-        print('data', data)
-        response, status_code = self.api.http_client.post(url, data=data)
-        resource_dict = self.schema.load(response)
+        # print('data', data)
 
-        errors = []
+        resource_data, errors, response = self.call(
+                url,
+                http_method='POST',
+                data=data,
+                params=params)
 
-        if 'errors' in response:
-            errors = response['errors']
-
-        return self.__resource_class__(errors=errors, **resource_dict.data)
+        return self.__resource_class__(errors=errors,
+                                       response=response,
+                                       **resource_data)
 
     def _update(self, resource, url=None, params={}):
-        url = self.resource_url(url, resource_id=resource.id, params=params)
+        url = self.resource_url(url, resource_id=resource.id)
         data = self.schema.dump(resource).data
-        response, status_code = self.api.http_client.put(url, data=data)
-        resource_dict = self.schema.load(response)
 
-        errors = []
+        resource_data, errors, response = self.call(
+                url,
+                http_method='PUT',
+                data=data,
+                params=params)
 
-        if 'errors' in response:
-            errors = response['errors']
+        return self.__resource_class__(errors=errors,
+                                       response=response,
+                                       **resource_data)
 
-        return self.__resource_class__(errors=errors, **resource_dict.data)
-
-    def resource_url(self, url, resource_id=None, params={}):
+    def resource_url(self, url, resource_id=None):
         url = url if url else self.__resource_url__
         if resource_id:
             url = url + '/' + str(resource_id)
-        if len(params) > 0:
-            url = url + '?' + urllib.urlencode(params)
-
         # if url[-1] != '/':
         #     url = url + '/'
 
