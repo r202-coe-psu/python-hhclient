@@ -1,6 +1,8 @@
 from hhclient.common import base
 from hhclient.common import schemas
 
+from . import items
+
 
 class InventoryConsumingItem(base.Resource):
     __resource_name__ = 'inventory-consuming-items'
@@ -16,9 +18,9 @@ class InventoryManager(base.Manager):
 
     def __init__(self, api, schema):
         super().__init__(api, schema)
-        self.inventoy_consuming_item_schema = \
+        self.inventory_consuming_items_schema = \
             schemas.ResourceSchemaFactory.create_schema(
-                InventoryConsumingItem,
+                InventoryConsumingItem.__resource_name__,
                 self.api.retrieve_schema(
                     resource_type=InventoryConsumingItem.__resource_name__))
 
@@ -45,18 +47,18 @@ class InventoryManager(base.Manager):
                 self.__resource_url__.format(
                     stock_id=stock.id))
 
-        data = dict(item=item,
-                    consuming_size=consuming_size,
-                    consuming_unit=consuming_unit)
+        ici = InventoryConsumingItem(consuming_size=consuming_size,
+                                     consuming_unit=consuming_unit)
+        ici.item = items.Item(id=item)
 
-        consuming_data = self.inventory_consuming_item_schema.dump(data).data
-        response, status_code = self.api.http_client.post(url, data=data)
-        resource_dict = self.inventory_consuming_item_schema.load(response)
+        data = self.preprocess_data(ici, self.inventory_consuming_items_schema)
 
-        errors = []
+        resource_data, errors, response = self.call(
+                url,
+                http_method='POST',
+                data=data,
+                schema=self.inventory_consuming_items_schema)
 
-        if 'errors' in response:
-            errors = response['errors']
-
-        return self.__resource_class__(errors=errors, **resource_dict.data)
-
+        return self.__resource_class__(errors=errors,
+                                       response=response,
+                                       **resource_data)

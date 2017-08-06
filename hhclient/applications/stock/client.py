@@ -3,6 +3,7 @@ from hhclient.common import client
 from . import stocks
 from . import items
 from . import inventories
+from . import consumptions
 
 import logging
 
@@ -29,3 +30,7 @@ class Client(client.BaseClient):
                 self,
                 schema=self.retrieve_schema(
                     inventories.InventoryManager))
+        self.consumptions = consumptions.ConsumptionManager(
+                self,
+                schema=self.retrieve_schema(
+                    consumptions.ConsumptionManager))

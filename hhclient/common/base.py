@@ -114,14 +114,14 @@ class BaseManager:
         # print('response', response)
         resource_data = None
 
-        dump_schema = self.schema.load
+        load_schema = self.schema.load
         if schema:
-            dump_schema = self.schema.load
+            load_schema = schema.load
 
         if schema_many:
-            resource_data = dump_schema(response, many=True).data
+            resource_data = load_schema(response, many=True).data
         else:
-            resource_data = dump_schema(response).data
+            resource_data = load_schema(response).data
 
         errors = []
 
@@ -167,19 +167,7 @@ class BaseManager:
         # print('reso', resource.data)
         # print('===>',
         #        self.schema.fields['building']._Relationship__schema.__dict__)
-        data = self.schema.dump(resource).data
-
-        for name, field in self.schema.fields.items():
-            if isinstance(field, mja.fields.Relationship):
-                if name not in data:
-                    # print('xxx>', resource.data)
-                    if name in resource.data:
-                        if 'relationships' not in data['data']:
-                            data['data']['relationships'] = {}
-                        data['data']['relationships'][name] = \
-                            field._Relationship__schema.dump(
-                                resource.data[name]).data
-
+        data = self.preprocess_data(resource)
         # print('data', data)
 
         resource_data, errors, response = self.call(
@@ -194,7 +182,7 @@ class BaseManager:
 
     def _update(self, resource, url=None, params={}):
         url = self.resource_url(url, resource_id=resource.id)
-        data = self.schema.dump(resource).data
+        data = self.preprocess_data(resource)
 
         resource_data, errors, response = self.call(
                 url,
@@ -205,6 +193,26 @@ class BaseManager:
         return self.__resource_class__(errors=errors,
                                        response=response,
                                        **resource_data)
+
+    def preprocess_data(self, resource, schema=None):
+        data = {}
+
+        if schema:
+            data = schema.dump(resource).data
+        else:
+            data = self.schema.dump(resource).data
+
+        for name, field in self.schema.fields.items():
+            if isinstance(field, mja.fields.Relationship):
+                if name not in data:
+                    # print('xxx>', resource.data)
+                    if name in resource.data:
+                        if 'relationships' not in data['data']:
+                            data['data']['relationships'] = {}
+                        data['data']['relationships'][name] = \
+                            field._Relationship__schema.dump(
+                                resource.data[name]).data
+        return data
 
     def resource_url(self, url, resource_id=None):
         url = url if url else self.__resource_url__
